@@ -4,7 +4,7 @@ Detailed documentation for the Battle Royale resource stack.
 
 ## Docs website
 
-A React (JSX) site under [`site/`](site/) renders these markdown pages with navigation, search, and Mermaid diagrams.
+A React (JSX) site under [`site/`](site/) renders these markdown pages with navigation, search, and an interactive React Flow game-loop diagram on Overview.
 
 From this folder (`[docs]`), or from the server base:
 

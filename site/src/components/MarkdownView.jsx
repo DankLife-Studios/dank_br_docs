@@ -1,34 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { rewriteDocHref } from '../content/rewriteLinks.js';
-
-let mermaidModulePromise;
-let mermaidReadyPromise;
-let mermaidRenderSeq = 0;
-
-function loadMermaid() {
-  if (!mermaidModulePromise) {
-    mermaidModulePromise = import('mermaid').then((mod) => mod.default || mod);
-  }
-  return mermaidModulePromise;
-}
-
-function ensureMermaidReady() {
-  if (!mermaidReadyPromise) {
-    mermaidReadyPromise = loadMermaid().then((mermaid) => {
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: 'dark',
-        securityLevel: 'loose',
-        fontFamily: 'IBM Plex Sans, sans-serif',
-      });
-      return mermaid;
-    });
-  }
-  return mermaidReadyPromise;
-}
 
 function slugify(text) {
   return String(text)
@@ -53,103 +27,119 @@ function extractHeadings(html) {
   return headings;
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderMarkdownHtml(markdown, currentFile) {
+  const parser = new Marked();
+  parser.use({
+    gfm: true,
+    breaks: false,
+    renderer: {
+      heading({ tokens, depth }) {
+        const text = this.parser.parseInline(tokens);
+        const id = slugify(text);
+        return `<h${depth} id="${id}">${text}</h${depth}>\n`;
+      },
+      link({ href, title, tokens }) {
+        const text = this.parser.parseInline(tokens);
+        const next = rewriteDocHref(href || '', currentFile);
+        const titleAttr = title ? ` title="${title}"` : '';
+        return `<a href="${next}"${titleAttr}>${text}</a>`;
+      },
+      code({ text, lang }) {
+        const language = String(lang || '').trim().split(/\s+/)[0] || '';
+        const classAttr = language ? ` class="language-${escapeHtml(language)}"` : '';
+        return `<pre><code${classAttr}>${escapeHtml(text)}</code></pre>\n`;
+      },
+    },
+  });
+
+  return DOMPurify.sanitize(parser.parse(markdown), {
+    ADD_ATTR: ['id', 'target', 'rel'],
+  });
+}
+
 /**
- * @param {{ markdown: string, currentFile?: string, onHeadings?: (h: any[]) => void }} props
+ * Split markdown on {{embed-id}} markers for React embeds.
+ * @param {string} markdown
+ * @param {Record<string, import('react').ReactNode>} embeds
  */
-export default function MarkdownView({ markdown, currentFile = '', onHeadings }) {
+function splitWithEmbeds(markdown, embeds) {
+  const keys = Object.keys(embeds || {});
+  if (!keys.length) {
+    return [{ type: 'md', content: markdown }];
+  }
+
+  const pattern = new RegExp(`\\{\\{(${keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\}\\}`, 'g');
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(markdown))) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'md', content: markdown.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: 'embed', id: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < markdown.length) {
+    parts.push({ type: 'md', content: markdown.slice(lastIndex) });
+  }
+
+  return parts.length ? parts : [{ type: 'md', content: markdown }];
+}
+
+/**
+ * @param {{
+ *   markdown: string,
+ *   currentFile?: string,
+ *   onHeadings?: (h: any[]) => void,
+ *   embeds?: Record<string, import('react').ReactNode>,
+ * }} props
+ */
+export default function MarkdownView({ markdown, currentFile = '', onHeadings, embeds }) {
   const rootRef = useRef(null);
   const navigate = useNavigate();
 
-  const html = useMemo(() => {
-    const parser = new Marked();
-    parser.use({
-      gfm: true,
-      breaks: false,
-      renderer: {
-        heading({ tokens, depth }) {
-          const text = this.parser.parseInline(tokens);
-          const id = slugify(text);
-          return `<h${depth} id="${id}">${text}</h${depth}>\n`;
-        },
-        link({ href, title, tokens }) {
-          const text = this.parser.parseInline(tokens);
-          const next = rewriteDocHref(href || '', currentFile);
-          const titleAttr = title ? ` title="${title}"` : '';
-          return `<a href="${next}"${titleAttr}>${text}</a>`;
-        },
-      },
-    });
+  const parts = useMemo(() => splitWithEmbeds(markdown, embeds), [markdown, embeds]);
 
-    const raw = parser.parse(markdown);
+  const renderedParts = useMemo(
+    () =>
+      parts.map((part) => {
+        if (part.type === 'embed') return part;
+        return {
+          type: 'md',
+          html: renderMarkdownHtml(part.content, currentFile),
+        };
+      }),
+    [parts, currentFile]
+  );
 
-    return DOMPurify.sanitize(raw, {
-      ADD_ATTR: ['id', 'target', 'rel'],
-    });
-  }, [markdown, currentFile]);
+  const htmlSignature = useMemo(
+    () => renderedParts.map((p) => (p.type === 'md' ? p.html : `embed:${p.id}`)).join('\n'),
+    [renderedParts]
+  );
 
   useEffect(() => {
-    onHeadings?.(extractHeadings(html));
-  }, [html, onHeadings]);
+    const headings = [];
+    for (const part of renderedParts) {
+      if (part.type === 'md') {
+        headings.push(...extractHeadings(part.html));
+      }
+    }
+    onHeadings?.(headings);
+  }, [htmlSignature, onHeadings, renderedParts]);
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
-
-    const blocks = root.querySelectorAll('pre code.language-mermaid');
-    if (!blocks.length) return undefined;
-
-    let cancelled = false;
-    const hosts = [];
-
-    blocks.forEach((code) => {
-      const pre = code.parentElement;
-      if (!pre) return;
-      const source = code.textContent || '';
-      const host = document.createElement('div');
-      host.className = 'mermaid mermaid-loading';
-      host.textContent = 'Loading diagram…';
-      pre.replaceWith(host);
-      hosts.push({ host, source });
-    });
-
-    ensureMermaidReady()
-      .then(async (mermaid) => {
-        if (cancelled) return;
-        for (let index = 0; index < hosts.length; index += 1) {
-          const { host, source } = hosts[index];
-          if (cancelled || !host.isConnected) continue;
-          host.classList.remove('mermaid-loading');
-          const id = `mermaid-${++mermaidRenderSeq}-${index}`;
-          try {
-            const { svg } = await mermaid.render(id, source);
-            if (!cancelled && host.isConnected) {
-              host.innerHTML = svg;
-            }
-          } catch (err) {
-            if (!cancelled && host.isConnected) {
-              host.innerHTML = `<pre>Mermaid error: ${String(err.message || err)}</pre>`;
-            }
-          }
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        hosts.forEach(({ host }) => {
-          if (host.isConnected) {
-            host.classList.remove('mermaid-loading');
-            host.innerHTML = `<pre>Mermaid error: ${String(err.message || err)}</pre>`;
-          }
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [html]);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
+    if (!root) return undefined;
 
     const onClick = (event) => {
       const anchor = event.target.closest('a');
@@ -166,7 +156,24 @@ export default function MarkdownView({ markdown, currentFile = '', onHeadings })
 
     root.addEventListener('click', onClick);
     return () => root.removeEventListener('click', onClick);
-  }, [navigate, html]);
+  }, [navigate, htmlSignature]);
 
-  return <div className="markdown" ref={rootRef} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div className="markdown" ref={rootRef}>
+      {renderedParts.map((part, index) => {
+        if (part.type === 'embed') {
+          return (
+            <div className="doc-embed" key={`embed-${part.id}-${index}`}>
+              {embeds?.[part.id] ?? null}
+            </div>
+          );
+        }
+        return (
+          <Fragment key={`md-${index}`}>
+            <div dangerouslySetInnerHTML={{ __html: part.html }} />
+          </Fragment>
+        );
+      })}
+    </div>
+  );
 }

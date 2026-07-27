@@ -20,52 +20,7 @@ API naming: `br-*` resources, `br:*` convars, events under `br-lib:*` / `br-core
 
 ## Game loop
 
-```mermaid
-flowchart TD
-  subgraph connect [Connect]
-    Join[FiveM join] --> Queue[br-queue]
-    Queue -->|admit| Load[br-loadscreen]
-  end
-
-  subgraph identity [Character]
-    Load --> Multi[br-multicharacter]
-    Multi --> Login[br-core Login]
-    Login -->|new| Appearance[br-appearance]
-    Appearance --> Lobby[br-lobby]
-    Login -->|existing| Lobby
-  end
-
-  subgraph lobbyPhase [Lobby bucket 1]
-    Lobby --> Meta["/teams /tints /crates /leaderboard"]
-    Meta --> Lobby
-    Late[Late join during match] --> Lobby
-    Lobby -->|countdown or /startmatch| Start[br-match StartMatch]
-  end
-
-  subgraph matchPhase [Match bucket 2]
-    Start --> Plane[br-airplane]
-    Plane -->|jump or force| Para[Parachute]
-    Plane -->|route end| Warmup[Warmup]
-    Para --> Warmup
-    Warmup --> Fight[InProgress]
-    Fight --- Zone[br-zone]
-    Fight --- Loot[br-loot]
-    Fight --- Air[br-airdrops]
-    Fight --- Hud[br-hud]
-    Fight -->|downed non-solo| Life[br-lifeline]
-    Life -->|revived| Fight
-    Life -->|bleedout| ElimQ{Teammates alive?}
-    Fight -->|eliminated| ElimQ
-    ElimQ -->|yes| Spec[Spectate]
-    Spec -->|team wiped| Back[Back to lobby]
-    ElimQ -->|no| Back
-    Fight -->|last alive| Win[Victory]
-    Win -->|grant crate| Crates[br-crates]
-  end
-
-  Win --> Lobby
-  Back --> Lobby
-```
+{{game-loop-flow}}
 
 ### Concrete flow
 

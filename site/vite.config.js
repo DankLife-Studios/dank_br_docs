@@ -21,8 +21,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Mermaid's lazy flowchart/layout chunk exceeds 500 kB; it is not in the main bundle.
-    chunkSizeWarningLimit: 700,
   },
 });
 
