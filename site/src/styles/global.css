@@ -6,9 +6,9 @@
   --border: #2a343e;
   --text: #e8edf2;
   --text-muted: #8b9aab;
-  --accent: #3dd68c;
-  --accent-dim: rgba(61, 214, 140, 0.14);
-  --accent-strong: #2bb673;
+  --accent: #a78bfa;
+  --accent-dim: rgba(167, 139, 250, 0.16);
+  --accent-strong: #8b5cf6;
   --danger: #f07178;
   --code-bg: #0a0d10;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
@@ -39,7 +39,7 @@ body {
   line-height: 1.65;
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(61, 214, 140, 0.08), transparent 55%),
+    radial-gradient(1200px 600px at 10% -10%, rgba(167, 139, 250, 0.1), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(90, 140, 180, 0.08), transparent 50%),
     linear-gradient(180deg, #10151a 0%, var(--bg) 40%, #0b0e11 100%);
   background-attachment: fixed;
@@ -51,7 +51,7 @@ a {
 }
 
 a:hover {
-  color: #6ee7a8;
+  color: #c4b5fd;
   text-decoration: underline;
 }
 
@@ -335,7 +335,7 @@ input {
   border: 1px solid var(--border);
   border-radius: 14px;
   background:
-    linear-gradient(135deg, rgba(61, 214, 140, 0.1), transparent 45%),
+    linear-gradient(135deg, rgba(167, 139, 250, 0.12), transparent 45%),
     var(--bg-elevated);
   box-shadow: var(--shadow);
 }
@@ -581,6 +581,17 @@ input {
   margin: 0 0 1.2rem;
   overflow-x: auto;
   text-align: center;
+}
+
+.markdown .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown .mermaid-loading {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 12px;
 }
 
 .markdown img {

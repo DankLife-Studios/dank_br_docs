@@ -22,33 +22,49 @@ API naming: `br-*` resources, `br:*` convars, events under `br-lib:*` / `br-core
 
 ```mermaid
 flowchart TD
-    Join[FiveMJoin] --> Q[br-queue]
-    Q -->|admit| A[br-loadscreen]
-    A --> C[br-multicharacter]
-    C -->|NewCharacter| D[br-coreLogin]
-    D --> E[br-appearance]
-    E --> F[br-lobby]
-    C -->|Existing| F
-    F -->|teams_tints_crates_lb| Meta[LobbyUIs]
-    Meta --> F
-    F -->|countdown_or_startmatch| G[br-match]
-    G --> H[br-airplane]
-    H -->|jump_or_force| I[Parachute]
-    H -->|route_end| J[Warmup]
-    I --> J
-    J --> K[InProgress]
-    K --> Z[br-zone]
-    K --> Loot[br-loot]
-    K --> Air[br-airdrops]
-    K --> HUD[br-hud]
-    K -->|teammates_alive| Spec[Spectate]
-    Spec -->|team_wiped| L[ElimToLobby]
-    K -->|team_wiped| L
-    K -->|last_alive| M[Victory]
-    M -->|grant_crate| Crates[br-crates]
-    M --> F
-    L --> F
-    Late[LateJoin] --> F
+  subgraph connect [Connect]
+    Join[FiveM join] --> Queue[br-queue]
+    Queue -->|admit| Load[br-loadscreen]
+  end
+
+  subgraph identity [Character]
+    Load --> Multi[br-multicharacter]
+    Multi --> Login[br-core Login]
+    Login -->|new| Appearance[br-appearance]
+    Appearance --> Lobby[br-lobby]
+    Login -->|existing| Lobby
+  end
+
+  subgraph lobbyPhase [Lobby bucket 1]
+    Lobby --> Meta["/teams /tints /crates /leaderboard"]
+    Meta --> Lobby
+    Late[Late join during match] --> Lobby
+    Lobby -->|countdown or /startmatch| Start[br-match StartMatch]
+  end
+
+  subgraph matchPhase [Match bucket 2]
+    Start --> Plane[br-airplane]
+    Plane -->|jump or force| Para[Parachute]
+    Plane -->|route end| Warmup[Warmup]
+    Para --> Warmup
+    Warmup --> Fight[InProgress]
+    Fight --- Zone[br-zone]
+    Fight --- Loot[br-loot]
+    Fight --- Air[br-airdrops]
+    Fight --- Hud[br-hud]
+    Fight -->|downed non-solo| Life[br-lifeline]
+    Life -->|revived| Fight
+    Life -->|bleedout| ElimQ{Teammates alive?}
+    Fight -->|eliminated| ElimQ
+    ElimQ -->|yes| Spec[Spectate]
+    Spec -->|team wiped| Back[Back to lobby]
+    ElimQ -->|no| Back
+    Fight -->|last alive| Win[Victory]
+    Win -->|grant crate| Crates[br-crates]
+  end
+
+  Win --> Lobby
+  Back --> Lobby
 ```
 
 ### Concrete flow

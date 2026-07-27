@@ -2,15 +2,33 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Marked } from 'marked';
 import DOMPurify from 'dompurify';
-import mermaid from 'mermaid';
 import { rewriteDocHref } from '../content/rewriteLinks.js';
 
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'dark',
-  securityLevel: 'loose',
-  fontFamily: 'IBM Plex Sans, sans-serif',
-});
+let mermaidModulePromise;
+let mermaidReadyPromise;
+let mermaidRenderSeq = 0;
+
+function loadMermaid() {
+  if (!mermaidModulePromise) {
+    mermaidModulePromise = import('mermaid').then((mod) => mod.default || mod);
+  }
+  return mermaidModulePromise;
+}
+
+function ensureMermaidReady() {
+  if (!mermaidReadyPromise) {
+    mermaidReadyPromise = loadMermaid().then((mermaid) => {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        securityLevel: 'loose',
+        fontFamily: 'IBM Plex Sans, sans-serif',
+      });
+      return mermaid;
+    });
+  }
+  return mermaidReadyPromise;
+}
 
 function slugify(text) {
   return String(text)
@@ -78,31 +96,54 @@ export default function MarkdownView({ markdown, currentFile = '', onHeadings })
     if (!root) return;
 
     const blocks = root.querySelectorAll('pre code.language-mermaid');
-    const jobs = [];
+    if (!blocks.length) return undefined;
 
-    blocks.forEach((code, index) => {
+    let cancelled = false;
+    const hosts = [];
+
+    blocks.forEach((code) => {
       const pre = code.parentElement;
       if (!pre) return;
       const source = code.textContent || '';
       const host = document.createElement('div');
-      host.className = 'mermaid';
-      host.textContent = source;
+      host.className = 'mermaid mermaid-loading';
+      host.textContent = 'Loading diagram…';
       pre.replaceWith(host);
-
-      jobs.push(
-        mermaid
-          .render(`mermaid-${index}-${Date.now()}`, source)
-          .then(({ svg }) => {
-            host.innerHTML = svg;
-          })
-          .catch((err) => {
-            host.innerHTML = `<pre>Mermaid error: ${String(err.message || err)}</pre>`;
-          })
-      );
+      hosts.push({ host, source });
     });
 
+    ensureMermaidReady()
+      .then(async (mermaid) => {
+        if (cancelled) return;
+        for (let index = 0; index < hosts.length; index += 1) {
+          const { host, source } = hosts[index];
+          if (cancelled || !host.isConnected) continue;
+          host.classList.remove('mermaid-loading');
+          const id = `mermaid-${++mermaidRenderSeq}-${index}`;
+          try {
+            const { svg } = await mermaid.render(id, source);
+            if (!cancelled && host.isConnected) {
+              host.innerHTML = svg;
+            }
+          } catch (err) {
+            if (!cancelled && host.isConnected) {
+              host.innerHTML = `<pre>Mermaid error: ${String(err.message || err)}</pre>`;
+            }
+          }
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        hosts.forEach(({ host }) => {
+          if (host.isConnected) {
+            host.classList.remove('mermaid-loading');
+            host.innerHTML = `<pre>Mermaid error: ${String(err.message || err)}</pre>`;
+          }
+        });
+      });
+
     return () => {
-      // no-op; next render replaces root content
+      cancelled = true;
     };
   }, [html]);
 
