@@ -578,13 +578,18 @@ input {
 }
 
 .game-loop-flow {
-  height: min(72vh, 920px);
-  min-height: 520px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  height: min(78vh, 980px);
+  min-height: 560px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 16px;
   overflow: hidden;
-  background: var(--bg-elevated);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background:
+    radial-gradient(900px 420px at 12% 0%, rgba(167, 139, 250, 0.14), transparent 55%),
+    radial-gradient(700px 380px at 90% 20%, rgba(244, 114, 182, 0.08), transparent 50%),
+    linear-gradient(180deg, #12171d 0%, #0e1114 55%, #0b0e12 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
 .game-loop-flow--loading {
@@ -594,74 +599,283 @@ input {
   font-size: 0.92rem;
 }
 
+.game-loop-flow .react-flow__renderer {
+  background: transparent;
+}
+
+.game-loop-flow .react-flow__edge-path {
+  filter: drop-shadow(0 0 4px rgba(124, 108, 240, 0.18));
+}
+
+.game-loop-flow .react-flow__edge.animated path {
+  stroke-dasharray: 6 4;
+}
+
 .game-loop-flow .react-flow__controls {
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 
 .game-loop-flow .react-flow__controls-button {
-  background: var(--bg-panel);
+  background: rgba(18, 23, 28, 0.92);
   border-bottom: 1px solid var(--border);
   fill: var(--text);
   color: var(--text);
+  width: 28px;
+  height: 28px;
 }
 
 .game-loop-flow .react-flow__controls-button:hover {
-  background: var(--bg-hover);
+  background: rgba(167, 139, 250, 0.16);
 }
 
 .game-loop-flow .react-flow__attribution {
   background: transparent;
   color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.flow-minimap {
+  background: rgba(14, 17, 20, 0.88) !important;
+  border: 1px solid rgba(167, 139, 250, 0.28) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.flow-legend {
+  min-width: 148px;
+  padding: 12px 14px;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 12px;
+  background: rgba(14, 17, 20, 0.88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.flow-legend-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.flow-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: var(--text-muted);
+}
+
+.flow-legend-row i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.flow-legend-hint {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.flow-phase-band {
+  width: 100%;
+  min-width: 640px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--phase-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--phase-accent) 10%, transparent);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.flow-phase-band-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--phase-accent);
+  font-weight: 700;
+}
+
+.flow-phase-band-hint {
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 .flow-node {
-  min-width: 148px;
-  max-width: 190px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  --node-accent: var(--accent);
+  --node-glow: var(--accent-dim);
+  position: relative;
+  min-width: 168px;
+  max-width: 210px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--node-accent) 45%, #2a343e);
+  border-radius: 14px;
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.35;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+    0 10px 28px rgba(0, 0, 0, 0.35),
+    0 0 24px var(--node-glow);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.flow-node--decision {
-  min-width: 150px;
-  background: rgba(251, 191, 36, 0.12);
-  border-color: #fbbf24;
+.flow-node:hover {
+  transform: translateY(-1px);
+  border-color: var(--node-accent);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 14px 34px rgba(0, 0, 0, 0.4),
+    0 0 32px var(--node-glow);
+}
+
+.flow-node-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--node-accent), transparent 90%);
+}
+
+.flow-node-body {
+  padding: 11px 13px 11px 14px;
+}
+
+.flow-node--hub {
+  min-width: 188px;
+  max-width: 230px;
+}
+
+.flow-node--hub .flow-node-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+.flow-node--win {
+  box-shadow:
+    0 0 0 1px rgba(52, 211, 153, 0.2) inset,
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    0 0 36px rgba(52, 211, 153, 0.28);
+}
+
+.flow-node--chip {
+  min-width: 108px;
+  max-width: 120px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.flow-node--chip .flow-node-body {
+  padding: 8px 12px;
   text-align: center;
-  transform: none;
 }
 
-.flow-node-phase {
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
+.flow-node--chip .flow-node-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.flow-node--chip .flow-node-accent {
+  display: none;
+}
+
+.flow-node-eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--node-accent);
   margin-bottom: 4px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .flow-node-title {
   font-weight: 600;
   color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
 }
 
 .flow-node-sub {
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--text-muted);
   font-size: 0.72rem;
+  line-height: 1.35;
+  font-family: var(--font-body);
+}
+
+.flow-decision {
+  width: 148px;
+  height: 148px;
+  display: grid;
+  place-items: center;
+}
+
+.flow-decision-inner {
+  width: 104px;
+  height: 104px;
+  rotate: 45deg;
+  border-radius: 18px;
+  border: 1px solid rgba(251, 191, 36, 0.65);
+  background:
+    linear-gradient(160deg, rgba(251, 191, 36, 0.22), rgba(22, 27, 32, 0.96) 60%);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.35),
+    0 0 28px rgba(251, 191, 36, 0.22);
+  display: grid;
+  place-items: center;
+}
+
+.flow-decision-label {
+  rotate: -45deg;
+  display: block;
+  width: 96px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fde68a;
 }
 
 .flow-handle {
-  width: 7px !important;
-  height: 7px !important;
-  background: var(--accent-strong) !important;
-  border: 1px solid #1a1028 !important;
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--node-accent, var(--accent-strong)) !important;
+  border: 2px solid #0e1114 !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent, var(--accent)) 35%, transparent);
+}
+
+@media (max-width: 720px) {
+  .game-loop-flow {
+    height: 70vh;
+    min-height: 480px;
+    border-radius: 12px;
+  }
+
+  .flow-legend {
+    display: none;
+  }
 }
 
 .markdown img {

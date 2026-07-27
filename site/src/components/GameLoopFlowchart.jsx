@@ -1,49 +1,104 @@
 import { useMemo } from 'react';
 import {
   Background,
+  BackgroundVariant,
   Controls,
+  Handle,
   MarkerType,
+  MiniMap,
+  Panel,
   Position,
   ReactFlow,
-  Handle,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 const PHASE = {
-  connect: { bg: 'rgba(167, 139, 250, 0.14)', border: '#a78bfa', label: 'Connect' },
-  identity: { bg: 'rgba(139, 92, 246, 0.16)', border: '#8b5cf6', label: 'Character' },
-  lobby: { bg: 'rgba(96, 165, 250, 0.14)', border: '#60a5fa', label: 'Lobby · bucket 1' },
-  match: { bg: 'rgba(244, 114, 182, 0.12)', border: '#f472b6', label: 'Match · bucket 2' },
-  end: { bg: 'rgba(52, 211, 153, 0.12)', border: '#34d399', label: 'Outcome' },
+  connect: {
+    accent: '#a78bfa',
+    glow: 'rgba(167, 139, 250, 0.35)',
+    fill: 'linear-gradient(160deg, rgba(167,139,250,0.22), rgba(22,27,32,0.95) 55%)',
+  },
+  identity: {
+    accent: '#8b5cf6',
+    glow: 'rgba(139, 92, 246, 0.32)',
+    fill: 'linear-gradient(160deg, rgba(139,92,246,0.2), rgba(22,27,32,0.95) 55%)',
+  },
+  lobby: {
+    accent: '#60a5fa',
+    glow: 'rgba(96, 165, 250, 0.3)',
+    fill: 'linear-gradient(160deg, rgba(96,165,250,0.18), rgba(22,27,32,0.95) 55%)',
+  },
+  match: {
+    accent: '#f472b6',
+    glow: 'rgba(244, 114, 182, 0.28)',
+    fill: 'linear-gradient(160deg, rgba(244,114,182,0.16), rgba(22,27,32,0.95) 55%)',
+  },
+  end: {
+    accent: '#34d399',
+    glow: 'rgba(52, 211, 153, 0.3)',
+    fill: 'linear-gradient(160deg, rgba(52,211,153,0.16), rgba(22,27,32,0.95) 55%)',
+  },
 };
 
+function PhaseBand({ data }) {
+  const theme = PHASE[data.phase] || PHASE.connect;
+  return (
+    <div className="flow-phase-band" style={{ '--phase-accent': theme.accent }}>
+      <span className="flow-phase-band-label">{data.label}</span>
+      <span className="flow-phase-band-hint">{data.hint}</span>
+    </div>
+  );
+}
+
 function FlowNode({ data }) {
-  const phase = PHASE[data.phase] || PHASE.connect;
+  const theme = PHASE[data.phase] || PHASE.connect;
+  const isHub = data.kind === 'hub';
+  const isWin = data.kind === 'win';
+  const isCompact = data.kind === 'chip';
+
   return (
     <div
-      className={`flow-node flow-node--${data.kind || 'step'}`}
+      className={[
+        'flow-node',
+        isHub ? 'flow-node--hub' : '',
+        isWin ? 'flow-node--win' : '',
+        isCompact ? 'flow-node--chip' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{
-        background: phase.bg,
-        borderColor: phase.border,
+        '--node-accent': theme.accent,
+        '--node-glow': theme.glow,
+        background: theme.fill,
       }}
     >
       <Handle type="target" position={Position.Top} className="flow-handle" />
-      {data.phaseLabel ? <div className="flow-node-phase">{data.phaseLabel}</div> : null}
-      <div className="flow-node-title">{data.label}</div>
-      {data.sub ? <div className="flow-node-sub">{data.sub}</div> : null}
+      <div className="flow-node-accent" />
+      <div className="flow-node-body">
+        {data.eyebrow ? <div className="flow-node-eyebrow">{data.eyebrow}</div> : null}
+        <div className="flow-node-title">{data.label}</div>
+        {data.sub ? <div className="flow-node-sub">{data.sub}</div> : null}
+      </div>
       <Handle type="source" position={Position.Bottom} className="flow-handle" />
+      {data.sideSource ? (
+        <Handle type="source" position={Position.Right} id="side" className="flow-handle" />
+      ) : null}
+      {data.leftSource ? (
+        <Handle type="source" position={Position.Left} id="left" className="flow-handle" />
+      ) : null}
     </div>
   );
 }
 
 function DecisionNode({ data }) {
   return (
-    <div className="flow-node flow-node--decision">
+    <div className="flow-decision">
       <Handle type="target" position={Position.Top} className="flow-handle" />
-      <div className="flow-node-title">{data.label}</div>
-      <Handle type="source" position={Position.Bottom} className="flow-handle" />
+      <div className="flow-decision-inner">
+        <span className="flow-decision-label">{data.label}</span>
+      </div>
       <Handle type="source" position={Position.Right} id="yes" className="flow-handle" />
-      <Handle type="source" position={Position.Left} id="no" className="flow-handle" />
+      <Handle type="source" position={Position.Bottom} id="no" className="flow-handle" />
     </div>
   );
 }
@@ -51,120 +106,330 @@ function DecisionNode({ data }) {
 const nodeTypes = {
   flow: FlowNode,
   decision: DecisionNode,
+  phase: PhaseBand,
 };
 
-const edgeDefaults = {
-  type: 'smoothstep',
-  animated: false,
-  style: { stroke: '#6b7280', strokeWidth: 1.5 },
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#6b7280', width: 16, height: 16 },
+const stroke = {
+  main: '#7c6cf0',
+  soft: '#4b5568',
+  loop: '#34d399',
+  branch: '#60a5fa',
+  danger: '#f472b6',
+  warn: '#fbbf24',
 };
 
-function n(id, label, x, y, phase, extra = {}) {
+function marker(color) {
+  return { type: MarkerType.ArrowClosed, color, width: 18, height: 18 };
+}
+
+function n(id, type, x, y, data, width) {
   return {
     id,
-    type: extra.type || 'flow',
+    type,
     position: { x, y },
-    data: { label, phase, ...extra },
+    data,
     draggable: false,
     connectable: false,
+    selectable: false,
+    style: width ? { width } : undefined,
   };
 }
 
-function e(id, source, target, label, extras = {}) {
+function e(id, source, target, label, opts = {}) {
+  const color = opts.color || stroke.main;
   return {
     id,
     source,
     target,
-    label,
-    ...edgeDefaults,
-    labelStyle: { fill: '#c4b5fd', fontSize: 11, fontWeight: 500 },
-    labelBgStyle: { fill: '#12171c', fillOpacity: 0.9 },
-    labelBgPadding: [4, 6],
-    labelBgBorderRadius: 4,
-    ...extras,
+    sourceHandle: opts.sourceHandle,
+    targetHandle: opts.targetHandle,
+    label: label || undefined,
+    type: 'smoothstep',
+    animated: Boolean(opts.animated),
+    style: {
+      stroke: color,
+      strokeWidth: opts.thick ? 2.25 : 1.6,
+      strokeDasharray: opts.dashed ? '6 5' : undefined,
+      opacity: opts.muted ? 0.75 : 1,
+    },
+    markerEnd: marker(color),
+    labelStyle: {
+      fill: '#e8edf2',
+      fontSize: 11,
+      fontWeight: 600,
+      fontFamily: 'IBM Plex Sans, sans-serif',
+    },
+    labelBgStyle: {
+      fill: '#0e1114',
+      fillOpacity: 0.88,
+    },
+    labelBgPadding: [5, 8],
+    labelBgBorderRadius: 999,
   };
 }
 
-const COL = { main: 280, left: 40, right: 520, systems: 160 };
-const ROW = 90;
+/** Compact column layout: main spine + clear branches */
+const X = { band: 40, main: 260, left: 40, right: 520, chip0: 120, chipGap: 130 };
+const Y = {
+  bandConnect: 0,
+  join: 56,
+  queue: 150,
+  load: 244,
+  bandIdentity: 340,
+  multi: 396,
+  login: 490,
+  appearance: 584,
+  lobby: 700,
+  meta: 700,
+  late: 790,
+  start: 900,
+  bandMatch: 990,
+  plane: 1046,
+  para: 1140,
+  warmup: 1234,
+  fight: 1340,
+  chips: 1450,
+  life: 1560,
+  win: 1560,
+  elimQ: 1680,
+  crates: 1680,
+  spec: 1800,
+  back: 1920,
+};
 
 export default function GameLoopFlowchart() {
   const { nodes, edges } = useMemo(() => {
     const nodes = [
-      n('join', 'FiveM join', COL.main, 0, 'connect', { phaseLabel: 'Connect' }),
-      n('queue', 'br-queue', COL.main, ROW, 'connect'),
-      n('load', 'br-loadscreen', COL.main, ROW * 2, 'connect'),
-
-      n('multi', 'br-multicharacter', COL.main, ROW * 3, 'identity', { phaseLabel: 'Character' }),
-      n('login', 'br-core Login', COL.main, ROW * 4, 'identity'),
-      n('appearance', 'br-appearance', COL.left, ROW * 5, 'identity', { sub: 'new character' }),
-      n('lobby', 'br-lobby', COL.main, ROW * 6, 'lobby', { phaseLabel: 'Lobby · bucket 1' }),
-
-      n('meta', 'Lobby UIs', COL.right, ROW * 6, 'lobby', { sub: '/teams /tints /crates /lb' }),
-      n('late', 'Late join', COL.left, ROW * 6.8, 'lobby', { sub: 'during active match' }),
-      n('start', 'br-match StartMatch', COL.main, ROW * 8, 'lobby', { sub: 'countdown or /startmatch' }),
-
-      n('plane', 'br-airplane', COL.main, ROW * 9, 'match', { phaseLabel: 'Match · bucket 2' }),
-      n('para', 'Parachute', COL.left, ROW * 10, 'match'),
-      n('warmup', 'Warmup', COL.main, ROW * 11, 'match', { sub: '10s' }),
-      n('fight', 'InProgress', COL.main, ROW * 12, 'match'),
-
-      n('zone', 'br-zone', COL.systems, ROW * 12.8, 'match'),
-      n('loot', 'br-loot', COL.systems + 120, ROW * 12.8, 'match'),
-      n('air', 'br-airdrops', COL.systems + 240, ROW * 12.8, 'match'),
-      n('hud', 'br-hud', COL.systems + 360, ROW * 12.8, 'match'),
-
-      n('life', 'br-lifeline', COL.left, ROW * 14, 'match', { sub: 'downed · non-solo' }),
-      n('elimQ', 'Teammates alive?', COL.main, ROW * 15.2, 'match', {
-        type: 'decision',
+      n('band-connect', 'phase', X.band, Y.bandConnect, {
+        label: '01 · Connect',
+        hint: 'Queue & session boot',
+        phase: 'connect',
+      }, 640),
+      n('join', 'flow', X.main, Y.join, {
+        label: 'FiveM join',
+        sub: 'Player connects to server',
+        phase: 'connect',
+        eyebrow: 'Entry',
+        kind: 'hub',
       }),
-      n('spec', 'Spectate', COL.right, ROW * 16.4, 'match'),
-      n('back', 'Back to lobby', COL.main, ROW * 17.6, 'end', { phaseLabel: 'Outcome' }),
-      n('win', 'Victory', COL.right, ROW * 14, 'end', { sub: 'last alive' }),
-      n('crates', 'br-crates', COL.right, ROW * 15.2, 'end', { sub: 'grant crate' }),
+      n('queue', 'flow', X.main, Y.queue, {
+        label: 'br-queue',
+        sub: 'Deferral / admit',
+        phase: 'connect',
+      }),
+      n('load', 'flow', X.main, Y.load, {
+        label: 'br-loadscreen',
+        sub: 'Tactical loading UI',
+        phase: 'connect',
+      }),
+
+      n('band-identity', 'phase', X.band, Y.bandIdentity, {
+        label: '02 · Character',
+        hint: 'One slot · login · appearance',
+        phase: 'identity',
+      }, 640),
+      n('multi', 'flow', X.main, Y.multi, {
+        label: 'br-multicharacter',
+        sub: 'Single character slot',
+        phase: 'identity',
+      }),
+      n('login', 'flow', X.main, Y.login, {
+        label: 'br-core Login',
+        sub: 'Session + player state',
+        phase: 'identity',
+        sideSource: true,
+        leftSource: true,
+      }),
+      n('appearance', 'flow', X.left, Y.appearance, {
+        label: 'br-appearance',
+        sub: 'New character only',
+        phase: 'identity',
+      }),
+
+      n('lobby', 'flow', X.main, Y.lobby, {
+        label: 'br-lobby',
+        sub: 'Bucket 1 · invincible wait room',
+        phase: 'lobby',
+        eyebrow: 'Hub',
+        kind: 'hub',
+        sideSource: true,
+      }),
+      n('meta', 'flow', X.right, Y.meta, {
+        label: 'Lobby UIs',
+        sub: '/teams · /tints · /crates · /lb',
+        phase: 'lobby',
+      }),
+      n('late', 'flow', X.left, Y.late, {
+        label: 'Late join',
+        sub: 'Waits for next match',
+        phase: 'lobby',
+      }),
+      n('start', 'flow', X.main, Y.start, {
+        label: 'StartMatch',
+        sub: 'Countdown or /startmatch',
+        phase: 'lobby',
+        eyebrow: 'br-match',
+      }),
+
+      n('band-match', 'phase', X.band, Y.bandMatch, {
+        label: '03 · Match',
+        hint: 'Bucket 2 · drop · fight · systems',
+        phase: 'match',
+      }, 640),
+      n('plane', 'flow', X.main, Y.plane, {
+        label: 'br-airplane',
+        sub: 'Shared cargoplane drop',
+        phase: 'match',
+        leftSource: true,
+      }),
+      n('para', 'flow', X.left, Y.para, {
+        label: 'Parachute',
+        sub: 'Jump or force eject',
+        phase: 'match',
+      }),
+      n('warmup', 'flow', X.main, Y.warmup, {
+        label: 'Warmup',
+        sub: '10 seconds',
+        phase: 'match',
+      }),
+      n('fight', 'flow', X.main, Y.fight, {
+        label: 'InProgress',
+        sub: 'Last player / team wins',
+        phase: 'match',
+        eyebrow: 'Fight',
+        kind: 'hub',
+        sideSource: true,
+        leftSource: true,
+      }),
+
+      n('zone', 'flow', X.chip0, Y.chips, {
+        label: 'br-zone',
+        phase: 'match',
+        kind: 'chip',
+      }),
+      n('loot', 'flow', X.chip0 + X.chipGap, Y.chips, {
+        label: 'br-loot',
+        phase: 'match',
+        kind: 'chip',
+      }),
+      n('air', 'flow', X.chip0 + X.chipGap * 2, Y.chips, {
+        label: 'br-airdrops',
+        phase: 'match',
+        kind: 'chip',
+      }),
+      n('hud', 'flow', X.chip0 + X.chipGap * 3, Y.chips, {
+        label: 'br-hud',
+        phase: 'match',
+        kind: 'chip',
+      }),
+
+      n('life', 'flow', X.left, Y.life, {
+        label: 'br-lifeline',
+        sub: 'Downed · revive window',
+        phase: 'match',
+      }),
+      n('win', 'flow', X.right, Y.win, {
+        label: 'Victory',
+        sub: 'Every teammate gets win',
+        phase: 'end',
+        eyebrow: 'Win',
+        kind: 'win',
+      }),
+      n('elimQ', 'decision', X.main + 20, Y.elimQ, {
+        label: 'Teammates alive?',
+      }),
+      n('crates', 'flow', X.right, Y.crates, {
+        label: 'br-crates',
+        sub: 'Grant win crate',
+        phase: 'end',
+      }),
+      n('spec', 'flow', X.right, Y.spec, {
+        label: 'Spectate',
+        sub: 'Cycle alive teammates',
+        phase: 'match',
+      }),
+      n('back', 'flow', X.main, Y.back, {
+        label: 'Back to lobby',
+        sub: 'Placement · ~5s return',
+        phase: 'end',
+        eyebrow: 'Loop',
+        kind: 'hub',
+      }),
     ];
 
     const edges = [
-      e('e1', 'join', 'queue'),
-      e('e2', 'queue', 'load', 'admit'),
-      e('e3', 'load', 'multi'),
-      e('e4', 'multi', 'login'),
-      e('e5', 'login', 'appearance', 'new'),
-      e('e6', 'appearance', 'lobby'),
+      e('e1', 'join', 'queue', null, { color: stroke.main, thick: true, animated: true }),
+      e('e2', 'queue', 'load', 'admit', { color: stroke.main, thick: true }),
+      e('e3', 'load', 'multi', null, { color: stroke.main, thick: true }),
+      e('e4', 'multi', 'login', null, { color: stroke.main, thick: true }),
+      e('e5', 'login', 'appearance', 'new', {
+        color: stroke.branch,
+        sourceHandle: 'left',
+      }),
+      e('e6', 'appearance', 'lobby', null, { color: stroke.branch }),
       e('e7', 'login', 'lobby', 'existing', {
-        sourceHandle: null,
-        style: { ...edgeDefaults.style, stroke: '#8b5cf6' },
+        color: stroke.main,
+        thick: true,
       }),
-      e('e8', 'lobby', 'meta'),
-      e('e9', 'meta', 'lobby', null, { animated: true }),
-      e('e10', 'late', 'lobby'),
-      e('e11', 'lobby', 'start', 'start match'),
-      e('e12', 'start', 'plane'),
-      e('e13', 'plane', 'para', 'jump / force'),
-      e('e14', 'plane', 'warmup', 'route end'),
-      e('e15', 'para', 'warmup'),
-      e('e16', 'warmup', 'fight'),
-      e('e17', 'fight', 'zone', null, { style: { stroke: '#4b5563', strokeDasharray: '4 4' } }),
-      e('e18', 'fight', 'loot', null, { style: { stroke: '#4b5563', strokeDasharray: '4 4' } }),
-      e('e19', 'fight', 'air', null, { style: { stroke: '#4b5563', strokeDasharray: '4 4' } }),
-      e('e20', 'fight', 'hud', null, { style: { stroke: '#4b5563', strokeDasharray: '4 4' } }),
-      e('e21', 'fight', 'life', 'downed'),
-      e('e22', 'life', 'fight', 'revived', { animated: true }),
-      e('e23', 'life', 'elimQ', 'bleedout'),
-      e('e24', 'fight', 'elimQ', 'eliminated'),
-      e('e25', 'elimQ', 'spec', 'yes', { sourceHandle: 'yes' }),
-      e('e26', 'elimQ', 'back', 'no', { sourceHandle: 'no' }),
-      e('e27', 'spec', 'back', 'team wiped'),
-      e('e28', 'fight', 'win', 'last alive'),
-      e('e29', 'win', 'crates', 'grant crate'),
-      e('e30', 'win', 'lobby', null, {
-        style: { ...edgeDefaults.style, stroke: '#34d399' },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#34d399', width: 16, height: 16 },
+      e('e8', 'lobby', 'meta', 'UIs', {
+        color: stroke.branch,
+        sourceHandle: 'side',
       }),
-      e('e31', 'back', 'lobby', null, {
-        style: { ...edgeDefaults.style, stroke: '#34d399' },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#34d399', width: 16, height: 16 },
+      e('e9', 'meta', 'lobby', null, {
+        color: stroke.branch,
+        animated: true,
+        dashed: true,
+      }),
+      e('e10', 'late', 'lobby', 'wait', { color: stroke.soft, muted: true }),
+      e('e11', 'lobby', 'start', 'ready', { color: stroke.main, thick: true, animated: true }),
+      e('e12', 'start', 'plane', null, { color: stroke.danger, thick: true }),
+      e('e13', 'plane', 'para', 'jump', {
+        color: stroke.danger,
+        sourceHandle: 'left',
+      }),
+      e('e14', 'plane', 'warmup', 'route end', { color: stroke.danger }),
+      e('e15', 'para', 'warmup', null, { color: stroke.danger }),
+      e('e16', 'warmup', 'fight', null, { color: stroke.danger, thick: true, animated: true }),
+      e('e17', 'fight', 'zone', null, { color: stroke.soft, dashed: true, muted: true }),
+      e('e18', 'fight', 'loot', null, { color: stroke.soft, dashed: true, muted: true }),
+      e('e19', 'fight', 'air', null, { color: stroke.soft, dashed: true, muted: true }),
+      e('e20', 'fight', 'hud', null, { color: stroke.soft, dashed: true, muted: true }),
+      e('e21', 'fight', 'life', 'downed', {
+        color: stroke.warn,
+        sourceHandle: 'left',
+      }),
+      e('e22', 'life', 'fight', 'revived', {
+        color: stroke.loop,
+        animated: true,
+        dashed: true,
+      }),
+      e('e23', 'life', 'elimQ', 'bleedout', { color: stroke.warn }),
+      e('e24', 'fight', 'elimQ', 'eliminated', { color: stroke.warn }),
+      e('e25', 'elimQ', 'spec', 'yes', {
+        color: stroke.branch,
+        sourceHandle: 'yes',
+      }),
+      e('e26', 'elimQ', 'back', 'no / solo', {
+        color: stroke.soft,
+        sourceHandle: 'no',
+      }),
+      e('e27', 'spec', 'back', 'team wiped', { color: stroke.soft }),
+      e('e28', 'fight', 'win', 'last alive', {
+        color: stroke.loop,
+        thick: true,
+        sourceHandle: 'side',
+        animated: true,
+      }),
+      e('e29', 'win', 'crates', 'reward', { color: stroke.loop }),
+      e('e30', 'crates', 'lobby', 'next round', {
+        color: stroke.loop,
+        thick: true,
+        animated: true,
+      }),
+      e('e31', 'back', 'lobby', 'next round', {
+        color: stroke.loop,
+        thick: true,
+        animated: true,
       }),
     ];
 
@@ -178,18 +443,55 @@ export default function GameLoopFlowchart() {
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.16 }}
-        minZoom={0.35}
-        maxZoom={1.4}
+        fitViewOptions={{ padding: 0.12, maxZoom: 1.05 }}
+        minZoom={0.28}
+        maxZoom={1.35}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
         panOnScroll
         zoomOnScroll
         preventScrolling={false}
+        defaultEdgeOptions={{ type: 'smoothstep' }}
+        colorMode="dark"
       >
-        <Background gap={18} size={1} color="rgba(167, 139, 250, 0.12)" />
-        <Controls showInteractive={false} />
+        <Background
+          id="dots"
+          variant={BackgroundVariant.Dots}
+          gap={22}
+          size={1.2}
+          color="rgba(167, 139, 250, 0.16)"
+        />
+        <Background
+          id="fade"
+          variant={BackgroundVariant.Lines}
+          gap={88}
+          color="rgba(42, 52, 62, 0.35)"
+          lineWidth={0.5}
+        />
+        <MiniMap
+          className="flow-minimap"
+          pannable
+          zoomable
+          maskColor="rgba(8, 10, 14, 0.72)"
+          nodeStrokeWidth={2}
+          nodeColor={(node) => {
+            if (node.type === 'phase') return 'transparent';
+            if (node.type === 'decision') return '#fbbf24';
+            const phase = node.data?.phase;
+            return PHASE[phase]?.accent || '#a78bfa';
+          }}
+        />
+        <Controls showInteractive={false} position="bottom-left" />
+        <Panel position="top-right" className="flow-legend">
+          <div className="flow-legend-title">Phases</div>
+          <div className="flow-legend-row"><i style={{ background: PHASE.connect.accent }} />Connect</div>
+          <div className="flow-legend-row"><i style={{ background: PHASE.identity.accent }} />Character</div>
+          <div className="flow-legend-row"><i style={{ background: PHASE.lobby.accent }} />Lobby</div>
+          <div className="flow-legend-row"><i style={{ background: PHASE.match.accent }} />Match</div>
+          <div className="flow-legend-row"><i style={{ background: PHASE.end.accent }} />Outcome</div>
+          <div className="flow-legend-hint">Scroll to pan · Ctrl+scroll to zoom</div>
+        </Panel>
       </ReactFlow>
     </div>
   );
