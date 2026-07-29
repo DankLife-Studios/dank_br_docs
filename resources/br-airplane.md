@@ -39,10 +39,12 @@ None.
 ## Server exports
 
 ```lua
-exports['br-airplane']:StartDrop(matchId, sources) -> boolean
+exports['br-airplane']:StartDrop(matchId, sources, opts?) -> boolean  -- opts.botDrop for empty human roster
 exports['br-airplane']:StopDrop()
 exports['br-airplane']:IsDropActive() -> boolean
 exports['br-airplane']:ForceCompleteDrop() -> boolean  -- force-jump remaining + complete
+exports['br-airplane']:GetDropInfo() -> table|nil
+exports['br-airplane']:TryCompleteDrop() -> boolean
 ```
 
 ## Usage

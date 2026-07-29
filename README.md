@@ -64,6 +64,7 @@ Markdown in `[docs]/` remains the source of truth — edit `.md` files, then ref
 | br-lifeline | [resources/br-lifeline.md](resources/br-lifeline.md) |
 | br-weather | [resources/br-weather.md](resources/br-weather.md) |
 | br-match | [resources/br-match.md](resources/br-match.md) |
+| br-bots | [resources/br-bots.md](resources/br-bots.md) |
 | br-admin | [resources/br-admin.md](resources/br-admin.md) |
 
 ## Exports & public APIs (by resource)
@@ -91,6 +92,7 @@ Each resource page has a full **Exports / Public API** section. Jump links:
 | [br-lifeline](resources/br-lifeline.md#server-exports) | Heals / last stand / revive |
 | [br-weather](resources/br-weather.md#server-exports) | Weather / time |
 | [br-match](resources/br-match.md#server-exports) | Match orchestration |
+| [br-bots](resources/br-bots.md#server-exports) | NPC test combatants |
 | [br-admin](resources/br-admin.md#server-exports) | Duty / admin checks |
 | br-hud / br-leaderboard / br-loadscreen | No exports — see event contracts / commands on their pages |
 

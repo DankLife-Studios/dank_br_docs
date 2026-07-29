@@ -44,13 +44,15 @@ exports['br-admin']:IsOnDuty(src) -> boolean
 exports['br-admin']:IsAdmin(src) -> boolean
 exports['br-admin']:HasNonDutyPlayers() -> boolean
 exports['br-admin']:IsServerEmptyOfPlayers() -> boolean  -- no non-duty players
+exports['br-admin']:EnterObserve(src) -> boolean
+exports['br-admin']:SetOnDuty(src, on) -> boolean
 ```
 
 ## Menu capabilities (NUI)
 
 - Toggle admin duty / enter observe (match bucket, noclip, invis, god)
 - Moderation: teleport, freeze, kill, revive, announce
-- Match: start/end, skip warmup, eliminate/quit player, gamemode + friendly fire
+- Match: start/end, bot match / queue bots, skip warmup, eliminate/quit player, gamemode + friendly fire
 - Dev tools: force zone phase, airdrop, loot refresh, weather/time/blackout (via other resources’ exports)
 
 ## Usage

@@ -42,6 +42,9 @@ Master command and keybind reference. Restricted = ACE / permission check as not
 | `/startmatch` | br-match | `group.admin` | Start match from lobby |
 | `/endmatch` | br-match | `group.admin` | Force-end match |
 | `/quitmatch` | br-match | `group.admin` | Quit match for yourself |
+| `/botmatch [count]` | br-bots | `group.admin` | Observe + start bot test match (min 2 bots) |
+| `/spawnbots [count]` | br-bots | `group.admin` | Queue NPC bots for next match |
+| `/clearbots` | br-bots | `group.admin` | Clear queued / active test bots |
 | `/admin` | br-admin | Menu open; actions need admin | Open admin NUI (F10) |
 | `/adminduty` | br-admin | Admin check | Toggle duty (excluded from matchmaking) |
 

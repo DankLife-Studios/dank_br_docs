@@ -86,6 +86,7 @@ exports['br-match']:BroadcastKillfeed(payload) -- { killer, victim, environmenta
 exports['br-match']:AdminQuitPlayer(src) -> boolean
 exports['br-match']:AdminEliminate(src) -> boolean
 exports['br-match']:AdminSkipWarmup() -> boolean
+exports['br-match']:OnBotEliminated(payload) -- { botId, teamId, name, killer? }
 exports['br-match']:GetGamemodeSettings() -> { mode, friendlyFire, teamSize }
 exports['br-match']:SetGamemodeSettings(mode, friendlyFire?) -> ok, reason?
 ```

@@ -14,7 +14,7 @@ Dank’s BR is a FiveM Battle Royale stack. Players connect through a queue, pic
 | Identity | [br-multicharacter](resources/br-multicharacter.md), [br-appearance](resources/br-appearance.md) |
 | Lobby meta | [br-lobby](resources/br-lobby.md), [br-teams](resources/br-teams.md), [br-tints](resources/br-tints.md), [br-crates](resources/br-crates.md), [br-leaderboard](resources/br-leaderboard.md) |
 | Match systems | [br-airplane](resources/br-airplane.md), [br-loot](resources/br-loot.md), [br-airdrops](resources/br-airdrops.md), [br-zone](resources/br-zone.md), [br-hud](resources/br-hud.md), [br-lifeline](resources/br-lifeline.md), [br-weather](resources/br-weather.md) |
-| Orchestration | [br-match](resources/br-match.md), [br-admin](resources/br-admin.md) |
+| Orchestration | [br-match](resources/br-match.md), [br-bots](resources/br-bots.md), [br-admin](resources/br-admin.md) |
 
 API naming: `br-*` resources, `br:*` convars, events under `br-lib:*` / `br-core:*` / `br-inventory:*` / `BRCore:*`. No `ox_lib` / `qbx_core` / `ox_inventory` provides.
 
@@ -118,7 +118,7 @@ Matches live `server.cfg` (source of truth):
 
 1. **CFX / early UI:** `br-loadscreen` → `mapmanager` → `br-chat` (`stop chat`) → `spawnmanager` → `sessionmanager` → `hardcap`
 2. **Framework:** `oxmysql` → `br-lib` → `br-core` → `pma-voice` → `br-weather` → `br-target` → `br-queue` → `br-inventory` → `br-appearance` → `br-multicharacter` → `br-tints` → `br-crates` → `br-leaderboard`
-3. **BR loop:** `br-lobby` → `br-teams` → `br-airplane` → `br-loot` → `br-airdrops` → `br-zone` → `br-hud` → `br-lifeline` → `br-match` → `br-admin`
+3. **BR loop:** `br-lobby` → `br-teams` → `br-airplane` → `br-loot` → `br-airdrops` → `br-zone` → `br-hud` → `br-lifeline` → `br-match` → `br-bots` → `br-admin`
 
 `br-queue` stops `hardcap` on start (even if `server.cfg` ensured it earlier). Do not start `ox_target` or `basic-gamemode`. Stock CFX notes: [Dependencies](dependencies.md#stock-cfx-resources).
 
