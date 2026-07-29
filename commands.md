@@ -45,6 +45,9 @@ Master command and keybind reference. Restricted = ACE / permission check as not
 | `/botmatch [count]` | br-bots | `group.admin` | Observe + start bot test match (min 2 bots) |
 | `/spawnbots [count]` | br-bots | `group.admin` | Queue NPC bots for next match |
 | `/clearbots` | br-bots | `group.admin` | Clear queued / active test bots |
+| `/botstatus` | br-bots | `group.admin` | Bot match status (alive, host, stages) |
+| `/botkill [id\|all]` | br-bots | `group.admin` | Force-eliminate bot(s) |
+| `/botgoto [id]` | br-bots | `group.admin` | Teleport to a bot |
 | `/admin` | br-admin | Menu open; actions need admin | Open admin NUI (F10) |
 | `/adminduty` | br-admin | Admin check | Toggle duty (excluded from matchmaking) |
 
