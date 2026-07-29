@@ -2,11 +2,15 @@
 
 Opt-in admin duty + NUI menu (`F10` / `/admin`). Duty admins are excluded from lobby count/match/zone; observe with noclip/invis/god. Match tab sets solo/duo/triple/quad + friendly fire.
 
+**On-duty HUD** (match/bots/zone strip) lives in [br-hud](br-hud.md) — not this resource.
+
 ← [Docs index](../README.md)
 
 ## Dependencies
 
 `br-lib`, `br-core` (NUI actions call nearly every match subsystem)
+
+Soft: `br-hud` (duty overlay sync)
 
 ## Config (`shared/config.lua`)
 
@@ -28,7 +32,7 @@ Opt-in admin duty + NUI menu (`F10` / `/admin`). Duty admins are excluded from l
 
 ## Events (client)
 
-`br-admin:client:setDuty`, `teleport`, `freeze`, `kill`, `revive`, `announce`, `setWeather`, `setTime`, `blackout`
+`br-admin:client:setDuty`, `applyObserve`, `teleport`, `freeze`, `kill`, `revive`, `announce`, `setWeather`, `setTime`, `blackout`
 
 ## State
 
@@ -36,6 +40,7 @@ Opt-in admin duty + NUI menu (`F10` / `/admin`). Duty admins are excluded from l
 |-----|-------|
 | `Player.state.brAdminDuty` | on duty |
 | `Player.state.brPhase` | `'admin'` while on duty |
+| `Player.state.brAdminObserve` | true while in match-bucket observe |
 
 ## Server exports
 
@@ -54,6 +59,8 @@ exports['br-admin']:SetOnDuty(src, on) -> boolean
 - Moderation: teleport, freeze, kill, revive, announce
 - Match: start/end, bot match / queue bots, skip warmup, eliminate/quit player, gamemode + friendly fire
 - Dev tools: force zone phase, airdrop, loot refresh, weather/time/blackout (via other resources’ exports)
+
+F10 open hides the br-hud duty strip; closing restores it if still on duty.
 
 ## Usage
 
